@@ -30,10 +30,12 @@ lmesg() {
         msgfail="Repository not found."
         msginit="Package found on AUR! Would you like to install?"
         msgpacman="Package found on Pacman! Would you like to install?"
+        msgroot="Do not run Saur as root."
     elif [ "$ulang" == "pt" ]; then
         msgfail="Repositório não encontrado."
         msginit="Pacote encontrado no AUR! Gostaria de instalar?"
         msgpacman="Pacote encontrado no Pacman! Gostaria de instalar?"
+        msgroot="Não execute Saur como root."
     fi
 }
 #build and install
@@ -94,9 +96,12 @@ saur_rm() {
     exit 0
 }
 ##SCRIPT RUN START
+#get language
+get_lang
+lmesg
 #root checker
 if (( ! UID )); then
-	echo "Do not run Saur as root."
+	echo "$msgroot"
 	exit 2
 else
     #saur command
@@ -104,16 +109,15 @@ else
         sudo pacman -Syu
         if pacman -Qs flatpak > /dev/null; then
             flatpak update
-            exit 0
-        else
-            exit 0
         fi
+        if command -v timeshift &> /dev/null; then
+            sudo timeshift --create --comments "Saur Update" --tags W
+        fi
+        exit 0
+    fi
     fi
     #set trap to cleanup on exit
     trap cleanup EXIT
-    #get language
-    get_lang
-    lmesg
     #get options
     while getopts "hr" opt; do
         case ${opt} in
