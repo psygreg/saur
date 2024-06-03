@@ -1,7 +1,8 @@
 #!/bin/bash
 ####SAUR - Superlight AUR Installer by Psygreg
 #create temp folder
-TEMP="$(mktemp -d)"
+TEST="$(mktemp -d -t saurXXXXXX)"
+TEMP="$(mktemp -d -t saurXXXXXX)"
 REMOVE=false
 PACMAN_ONLY=false
 FLATPAK_ONLY=false
@@ -9,6 +10,9 @@ AUR_ONLY=false
 MODCONFIRM=false
 MODUPDATE=false
 MODSEARCH=false
+RED='\033[1;31m'
+NC='\033[0m'
+CYAN='\033[1;36m'
 ###FUNCTIONS
 #-h
 ##get language from OS
@@ -24,49 +28,51 @@ get_lang() {
 }
 #languages and messages
 lmesg() {
+	#en-US
     if [ "$ulang" == "en" ]; then
-        msgfail="Package not found."
-        msginit="Package found on AUR! Would you like to install?"
-        msgpacman="Package found on Pacman! Would you like to install?"
-        msgroot="Do not run Saur as root."
-        pacfail="Package not found in official/multilib repositories."
-        flatoff="You haven't installed flatpak. To install it run 'saur flatpak'"
-        flatfail="Package not found on Flathub."
-        notpacman="This package is not installed."
-        aurfound="was found in the AUR."
+        msgfail="${RED}Package not found.${NC}"
+        msginit="${CYAN}Package found on AUR! Would you like to install?${NC}"
+        msgpacman="${CYAN}Package found on Pacman! Would you like to install?${NC}"
+        msgroot="${RED}Do not run Saur as root.${NC}"
+        pacfail="${RED}Package not found in official/multilib repositories.${NC}"
+        flatoff="${RED}You haven't installed flatpak.${NC} To install it run 'saur flatpak'"
+        flatfail="${RED}Package not found on Flathub.${NC}"
+        notpacman="${RED}This package is not installed.${NC}"
+        aurfound="${CYAN}was found in the AUR.${NC}"
         usage() {
-            echo "saur [-h] [-r] <package-name>"
+            echo -e "saur ${RED}[-h] [-r]${NC} <package-name>"
             echo "saur <package-name>"
-            echo "-r    Removes the specified package"
-            echo "-h    Displays this message"
-            echo "-p    Search only from official/multilib repositories"
-            echo "-f    Search only from Flathub"
-            echo "-a    Search only from AUR"
-            echo "-u    Update or reinstall the specified package" 
-            echo "-[p][f][a]y    Presumes all confirmed"
-            echo "-s[p][f][a]    Searches if the specified package is available, without installing" ##TODO
+            echo -e "${RED}-r${NC}    Removes the specified package"
+            echo -e "${RED}-h${NC}    Displays this message"
+            echo -e "${RED}-p${NC}    Search only from official/multilib repositories"
+            echo -e "${RED}-f${NC}    Search only from Flathub"
+            echo -e "${RED}-a${NC}    Search only from AUR"
+            echo -e "${RED}-u${NC}    Update or reinstall the specified package" 
+            echo -e "${RED}-[p][f][a]y${NC}    Presumes all confirmed"
+            echo -e "${RED}-s[p][f][a]${NC}    Searches if the specified package is available, without installing"
         }
+    #pt-BR
     elif [ "$ulang" == "pt" ]; then
-        msgfail="Pacote não encontrado."
-        msginit="Pacote encontrado no AUR! Gostaria de instalar?"
-        msgpacman="Pacote encontrado no Pacman! Gostaria de instalar?"
-        msgroot="Não execute Saur como root."
-        pacfail="Pacote não encontrado nos repositórios oficial/multilib."
-        flatoff="Você não tem flatpak instalado. Para instalar use 'saur flatpak'"
-        flatfail="Pacote não encontrado no Flathub."
-        notpacman="Este pacote não está instalado."
-        aurfound="foi encontrado no AUR."
+        msgfail="${RED}Pacote não encontrado.${NC}"
+        msginit="${CYAN}Pacote encontrado no AUR! Gostaria de instalar?${NC}"
+        msgpacman="${CYAN}Pacote encontrado no Pacman! Gostaria de instalar?${NC}"
+        msgroot="${RED}Não execute Saur como root.${NC}"
+        pacfail="${RED}Pacote não encontrado nos repositórios oficial/multilib.${NC}"
+        flatoff="${RED}Você não tem flatpak instalado.${NC} Para instalar use 'saur flatpak'"
+        flatfail="${RED}Pacote não encontrado no Flathub.${NC}"
+        notpacman="${RED}Este pacote não está instalado.${NC}"
+        aurfound="${CYAN}foi encontrado no AUR.${NC}"
         usage() {
-            echo "saur [-h] [-r] <nome-do-pacote>"
+            echo -e "saur ${RED}[-h] [-r]${NC} <nome-do-pacote>"
             echo "saur <nome-do-pacote>"
-            echo "-r    Remove o pacote especificado"
-            echo "-h    Exibe esta mensagem"
-            echo "-p    Busca somente nos repositórios oficial/multilib"
-            echo "-f    Busca somente no Flathub"
-            echo "-a    Busca somente no AUR"
-            echo "-u    Atualiza ou reinstala o pacote especificado"
-            echo "-[p][f][a]y    Presume todos confirmados"
-            echo "-s[p][f][a]    Procura se o pacote especificado está disponível, sem instalar" ##TODO
+            echo -e "${RED}-r${NC}    Remove o pacote especificado"
+            echo -e "${RED}-h${NC}    Exibe esta mensagem"
+            echo -e "${RED}-p${NC}    Busca somente nos repositórios oficial/multilib"
+            echo -e "${RED}-f${NC}    Busca somente no Flathub"
+            echo -e "${RED}-a${NC}    Busca somente no AUR"
+            echo -e "${RED}-u${NC}    Atualiza ou reinstala o pacote especificado"
+            echo -e "${RED}-[p][f][a]y${NC}    Presume todos confirmados"
+            echo -e "${RED}-s[p][f][a]${NC}    Procura se o pacote especificado está disponível, sem instalar"
         }
     fi
 }
@@ -79,27 +85,26 @@ make_func() {
 ##check if repo exists in official/multilib
 pacman_check() {
 	if pacman -Si "$1" &> /dev/null; then
-	    echo "$msgpacman"
+	    echo -e "$msgpacman"
 	    select yn in "Yes" "No"; do
             case $yn in
                 Yes ) 
-                    pacman -S --needed --noconfirm "$1";
+                    sudo pacman -S --needed --noconfirm "$1";
                     exit 0;;
                 No)
                     break;;
             esac
         done
     else
-        echo "$pacfail"
+        echo -e "$pacfail"
     fi
 }
 #for -y flag
 pacman_confirm() {
 	if pacman -Si "$1" &> /dev/null; then
-	    pacman -S --needed --noconfirm "$1"
-	    exit 0
+	    sudo pacman -S --needed --noconfirm "$1"
 	else
-	    echo "$pacfail"
+	    echo -e "$pacfail"
 	fi
 }
 ##check if repo exists in Flathub
@@ -107,12 +112,11 @@ flat_check() {
 	if pacman -Qs flatpak > /dev/null; then
 	    if flatpak search "$1" | grep -q "$1"; then
 	        flatpak install "$1"
-	        exit 0
 	    else
-	        echo "$flatfail"
+	        echo -e "$flatfail"
 	    fi
 	else
-	    echo "$flatoff"
+	    echo -e "$flatoff"
 	fi
 }
 #for -y flag
@@ -120,18 +124,17 @@ flat_confirm() {
     if pacman -Qs flatpak > /dev/null; then
 	    if flatpak search "$1" | grep -q "$1"; then
 	        flatpak install -y --noninteractive "$1"
-	        exit 0
 	    else
-	        echo "$flatfail"
+	        echo -e "$flatfail"
 	    fi
 	else
-	    echo "$flatoff"
+	    echo -e "$flatoff"
 	fi
 }
 ##check if repo exists in the AUR
 aur_check() {
-    if git clone "$REPO_URL" "$TEMP" &> /dev/null; then
-        echo "$msginit"
+    if git clone "$REPO_URL" "$TEST" &> /dev/null; then
+        echo -e "$msginit"
         select yn in "Yes" "No"; do
             case $yn in
                 Yes ) 
@@ -142,36 +145,32 @@ aur_check() {
             esac
         done
     else
-        echo "$msgfail"
-        exit 4
+        echo -e "$msgfail"
     fi
 }
 #for -y flag
 aur_confirm() {
-    if git clone "$REPO_URL" "$TEMP" &> /dev/null; then
+    if git clone "$REPO_URL" "$TEST" &> /dev/null; then
         make_func
-        exit 0
     else
-        echo "$msgfail"
+        echo -e "$msgfail"
     fi
 }
 #cleanup
 cleanup() {
-    rm -rf "$TEMP"
+    rm -rf "$TEMP" 
+    rm -rf "$TEST"
 }
 #remove function
 saur_rm() {
 	if pacman -Qs "$1" > /dev/null; then
         sudo pacman -R "$1"
-        exit 0
     elif pacman -Qs flatpak > /dev/null; then
         if flatpak list --app | grep -q "$1"; then
             flatpak remove "$1"
-            exit 0
         fi
     else
-        echo "$notpacman"
-        exit 4
+        echo -e "$notpacman"
     fi
 }
 #update funcion
@@ -180,13 +179,10 @@ saur_upd() {
 	    pacman_confirm	
         sudo pacman -R "$1"
         aur_confirm
-        exit 0
     elif flatpak list --app | grep -q "$1"; then
         flatpak update "$1"
-        exit 0
     else
-        echo "$notpacman"
-        exit 4
+        echo -e "$notpacman"
     fi
 }
 #search functions
@@ -195,7 +191,7 @@ pacman_src() {
 	    pacman -Si "$1"
 	    exit 0
 	else
-	    echo "$pacfail"
+	    echo -e "$pacfail"
 	fi
 }
 flat_src() {
@@ -203,16 +199,14 @@ flat_src() {
 	    flatpak search "$1"
 	    exit 0
 	else
-	    echo "$flatfail"
+	    echo -e "$flatfail"
 	fi
 }
 aur_src() {
 	if git clone "$REPO_URL" "$TEMP" &> /dev/null; then
 	    echo "'$1' $aurfound"
-	    exit 0
 	else
-	    echo "$msgfail"
-	    exit 4
+	    echo -e "$msgfail"
 	fi
 } 
 ##SCRIPT RUN START
@@ -221,7 +215,7 @@ get_lang
 lmesg
 #root checker
 if (( ! UID )); then
-	echo "$msgroot"
+	echo -e "$msgroot"
 	exit 2
 else
     #saur command
@@ -288,54 +282,47 @@ else
         usage
     fi
     #options
-    for PACKAGE in "$@"; do
-        REPO_URL="https://aur.archlinux.org/${PACKAGE}.git"
+    for pkg in "$@"; do ##CHECAR EXITS E MOVÊ-LOS PARA FORA DAS FUNÇÕES SE NÃO FOREM ERROS
+        REPO_URL="https://aur.archlinux.org/${pkg}.git"
         if [ "$REMOVE" == true ]; then
-            saur_rm "$PACKAGE"
+            saur_rm "$pkg"
         elif [ "$MODUPDATE" == true ]; then
             saur_upd "$PACKAGE"
         elif [ "$MODCONFIRM" == true ]; then
             if [ "$PACMAN_ONLY" == true ]; then
-                pacman_confirm "$PACKAGE"
-                exit 4
+                pacman_confirm "$pkg"
             elif [ "$FLATPAK_ONLY" == true ]; then
-                flat_confirm "$PACKAGE"
-                exit 4
+                flat_confirm "$pkg"
             elif [ "$AUR_ONLY" == true ]; then
-                aur_confirm "$PACKAGE"
-                exit 4
+                aur_confirm "$pkg"
             else
-                pacman_confirm "$PACKAGE"
-                flat_confirm "$PACKAGE"
-                aur_confirm "$PACKAGE"
-                exit 4
+                pacman_confirm "$pkg"
+                flat_confirm "$pkg"
+                aur_confirm "$pkg"
             fi
         elif [ "$MODSEARCH" == true ]; then
             if [ "$PACMAN_ONLY" == true ]; then
-                pacman_src "$PACKAGE"
-                exit 4
+                pacman_src "$pkg"
             elif [ "$FLATPAK_ONLY" == true ]; then
-                flat_src "$PACKAGE"
-				exit 4
+                flat_src "$pkg"
 			elif [ "$AUR_ONLY" == true ]; then
-				aur_src "$PACKAGE"
+				aur_src "$pkg"
 			else
-				pacman_src "$PACKAGE"
-				flat_src "$PACKAGE"
-				aur_src "$PACKAGE"
+				pacman_src "$pkg"
+				flat_src "$pkg"
+				aur_src "$pkg"
 			fi
 		elif [ "$PACMAN_ONLY" == true ]; then
-			pacman_check "$PACKAGE"
-			exit 0
+			pacman_check "$pkg"
 		elif [ "$FLATPAK_ONLY" == true ]; then
-			flat_check "$PACKAGE"
-			exit 0
+			flat_check "$pkg"
 		elif [ "$AUR_ONLY" == true ]; then
-			aur_check "$PACKAGE"
+			aur_check "$pkg"
 		else
-			pacman_check "$PACKAGE"
-			flat_check "$PACKAGE"
-			aur_check "$PACKAGE"
+			pacman_check "$pkg"
+			flat_check "$pkg"
+			aur_check "$pkg"
 		fi
 	done
+	exit 0
 fi
