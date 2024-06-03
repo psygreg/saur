@@ -1,6 +1,6 @@
 # Maintainer: Psygreg -- https://github.com/psygreg
 pkgname=saur
-pkgver=0.2
+pkgver=1.0
 pkgrel=1
 pkgdesc="Install manager for Arch-based distributions. Supports pacman, flatpak and AUR packages."
 arch=('any')
